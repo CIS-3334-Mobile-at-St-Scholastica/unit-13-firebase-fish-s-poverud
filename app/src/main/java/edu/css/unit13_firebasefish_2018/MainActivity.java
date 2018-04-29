@@ -1,6 +1,7 @@
 package edu.css.unit13_firebasefish_2018;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -9,6 +10,13 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 
@@ -19,23 +27,29 @@ public class MainActivity extends AppCompatActivity {
     ArrayAdapter<Fish> fishAdapter;
     List<Fish> fishList;
     FishFirebaseData fishDataSource;
-//    DatabaseReference myFishDbRef;
+    DatabaseReference myFishDbRef;
     int positionSelected;
     Fish fishSelected;
+
+    //Auth
+    private FirebaseAuth mAuth;
+    private FirebaseAuth.AuthStateListener mAuthListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //setupFirebaseDataChange();
+        mAuth = FirebaseAuth.getInstance(); //declare object for Firebase
+
+        setupFirebaseDataChange();
         setupListView();
         setupAddButton();
         setupDetailButton();
         setupDeleteButton();
     }
 
-    /*
+
     private void setupFirebaseDataChange() {
         fishDataSource = new FishFirebaseData();
         myFishDbRef = fishDataSource.open();
@@ -55,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-    */
+
 
     private void setupListView() {
         listViewFish = (ListView) findViewById(R.id.ListViewFish);
@@ -102,10 +116,32 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Log.d("MAIN", "onClick for Delete");
                 Log.d("MAIN", "Delete at position " + positionSelected);
-//                fishDataSource.deleteFish(fishList.get(positionSelected));
+                fishDataSource.deleteFish(fishList.get(positionSelected));
                 fishAdapter.remove( fishList.get(positionSelected) );
                 fishAdapter.notifyDataSetChanged();
             }
         });
+    }
+
+    public void onStart(){
+        super.onStart();
+        mAuthListener = new FirebaseAuth.AuthStateListener() { //initialized mAuthListener
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                //track the user when they sign in or out using the firebaseAuth
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user == null) {
+                    // User is signed out
+                    Log.d("CSS3334","onAuthStateChanged - User NOT is signed in");
+                    Intent signInIntent = new Intent(getBaseContext(), LoginActivity.class);
+                    startActivity(signInIntent);
+                }
+            }
+        };
+    }
+
+    public void onStop(){
+        super.onStop();
+        mAuth.removeAuthStateListener(mAuthListener);
     }
 }
